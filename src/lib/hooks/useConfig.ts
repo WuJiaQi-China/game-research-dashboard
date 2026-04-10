@@ -6,15 +6,31 @@ import type { ScrapeConfig } from '@/lib/types';
 export function useConfig() {
   return useQuery<ScrapeConfig | null>({
     queryKey: ['scrapeConfig'],
-    queryFn: fetchConfig,
+    queryFn: async () => {
+      try {
+        return await fetchConfig();
+      } catch (e) {
+        console.warn('Failed to fetch config from Firestore:', e);
+        return null;
+      }
+    },
     staleTime: 30 * 1000,
+    retry: 1,
   });
 }
 
 export function useSaveConfig() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (config: Partial<ScrapeConfig>) => saveConfig(config),
+    mutationFn: async (config: Partial<ScrapeConfig>) => {
+      try {
+        await saveConfig(config);
+      } catch (e) {
+        console.warn('Failed to save config to Firestore:', e);
+        // Save locally as fallback
+        localStorage.setItem('scrapeConfig', JSON.stringify(config));
+      }
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['scrapeConfig'] }),
   });
 }
