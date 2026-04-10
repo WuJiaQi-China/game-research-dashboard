@@ -95,10 +95,13 @@ function CategorySection({
 }
 
 export function SourceToggles({ config, onChange }: SourceTogglesProps) {
-  const sourcesEnabled = useMemo(
-    () => ({ ...config.sourcesEnabled }),
-    [config.sourcesEnabled]
-  );
+  // Ensure ALL sources have a key (default false) — not just ones user clicked
+  const ALL_KEYS = [...GAME_SOURCES, ...NOVEL_SOURCES, ...COMIC_SOURCES, ...ARTIST_SOURCES];
+  const sourcesEnabled = useMemo(() => {
+    const base: Record<string, boolean> = {};
+    for (const k of ALL_KEYS) base[k] = false;
+    return { ...base, ...config.sourcesEnabled };
+  }, [config.sourcesEnabled]);
 
   const handleToggleSource = useCallback(
     (source: string, enabled: boolean) => {
