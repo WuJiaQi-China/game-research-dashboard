@@ -1,44 +1,17 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Users, Eye, Globe, ChevronDown } from 'lucide-react';
+import { useMemo } from 'react';
+import { Users, Eye, Globe } from 'lucide-react';
 import { useI18n, useT } from '@/lib/i18n/context';
 import { useArtists, useTopArtists } from '@/lib/hooks/useArtists';
 import { MetricCard } from '@/components/ui/MetricCard';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { ArtistGallery } from '@/components/art/ArtistGallery';
 import { StyleTagChart } from '@/components/art/StyleTagChart';
 import { ToolsDistChart } from '@/components/art/ToolsDistChart';
 import { ArtistRankingTable } from '@/components/art/ArtistRankingTable';
-
-function CollapsibleSection({
-  title,
-  defaultOpen = true,
-  children,
-}: {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3 text-left"
-      >
-        <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-        <ChevronDown
-          size={18}
-          className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
-      {open && <div className="px-5 pb-5">{children}</div>}
-    </div>
-  );
-}
 
 export default function ArtPage() {
   const t = useT();
