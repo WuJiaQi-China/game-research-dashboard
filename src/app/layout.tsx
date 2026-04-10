@@ -6,8 +6,8 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { NavTabs } from '@/components/layout/NavTabs';
 
 export const metadata: Metadata = {
-  title: 'Game Research Dashboard',
-  description: 'Content research dashboard for games, novels, comics and artists',
+  title: 'Trend Crawler',
+  description: 'Content trend crawler for games, novels, comics and artists',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

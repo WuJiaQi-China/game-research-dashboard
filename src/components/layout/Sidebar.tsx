@@ -10,10 +10,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Languages,
+  Bot,
+  X,
 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/context';
-import { TYPE_LABELS, GAME_SOURCES, NOVEL_SOURCES, COMIC_SOURCES, ARTIST_SOURCES, SOURCE_LABELS } from '@/lib/constants';
+import { TYPE_LABELS } from '@/lib/constants';
 import type { ContentType } from '@/lib/types';
+
+const DEFAULT_GEMINI_KEY = 'REDACTED';
 
 const typeFilters: { key: ContentType; icon: typeof Gamepad2 }[] = [
   { key: 'game', icon: Gamepad2 },
@@ -22,19 +26,18 @@ const typeFilters: { key: ContentType; icon: typeof Gamepad2 }[] = [
   { key: 'artist', icon: Palette },
 ];
 
-const sourcesByType: Record<ContentType, string[]> = {
-  game: GAME_SOURCES,
-  novel: NOVEL_SOURCES,
-  comic: COMIC_SOURCES,
-  artist: ARTIST_SOURCES,
-};
+type LlmStatus = 'disconnected' | 'connecting' | 'connected';
 
 export function Sidebar() {
   const { lang, setLang, t } = useI18n();
   const [collapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTypes, setActiveTypes] = useState<Set<ContentType>>(new Set());
-  const [activeSources, setActiveSources] = useState<Set<string>>(new Set());
+
+  // LLM state
+  const [llmOpen, setLlmOpen] = useState(false);
+  const [apiKey, setApiKey] = useState(DEFAULT_GEMINI_KEY);
+  const [llmStatus, setLlmStatus] = useState<LlmStatus>('disconnected');
 
   const toggleType = (key: ContentType) => {
     setActiveTypes((prev) => {
@@ -45,24 +48,28 @@ export function Sidebar() {
     });
   };
 
-  const toggleSource = (key: string) => {
-    setActiveSources((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
   const toggleLang = () => setLang(lang === 'zh' ? 'en' : 'zh');
 
-  // Sources visible based on active types (all if none selected)
-  const visibleSources = (() => {
-    const types = activeTypes.size > 0 ? [...activeTypes] : typeFilters.map((f) => f.key);
-    const set = new Set<string>();
-    types.forEach((type) => sourcesByType[type]?.forEach((s) => set.add(s)));
-    return [...set];
-  })();
+  const handleVerifyLlm = () => {
+    if (!apiKey.trim()) return;
+    setLlmStatus('connecting');
+    // Simulate verification (replace with real Gemini API check later)
+    setTimeout(() => {
+      setLlmStatus(apiKey.trim().length > 5 ? 'connected' : 'disconnected');
+    }, 1500);
+  };
+
+  const statusDot = {
+    disconnected: 'bg-red-500',
+    connecting: 'bg-yellow-500 animate-pulse',
+    connected: 'bg-green-500',
+  }[llmStatus];
+
+  const statusText = {
+    disconnected: lang === 'zh' ? '未连接' : 'Disconnected',
+    connecting: lang === 'zh' ? '连接中...' : 'Connecting...',
+    connected: lang === 'zh' ? '已连接' : 'Connected',
+  }[llmStatus];
 
   if (collapsed) {
     return (
@@ -82,7 +89,7 @@ export function Sidebar() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
         <h1 className="text-base font-semibold text-gray-800 truncate">
-          Game Research
+          Trend Crawler
         </h1>
         <div className="flex items-center gap-1">
           <button
@@ -146,34 +153,71 @@ export function Sidebar() {
             })}
           </div>
         </div>
+      </div>
 
-        {/* Source Filter */}
-        <div>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            {t('data_source')}
-          </h3>
-          <div className="space-y-1">
-            {visibleSources.map((source) => {
-              const active = activeSources.has(source);
-              return (
-                <label
-                  key={source}
-                  className={`flex items-center gap-2.5 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors ${
-                    active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={active}
-                    onChange={() => toggleSource(source)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span>{SOURCE_LABELS[source] ?? source}</span>
-                </label>
-              );
-            })}
+      {/* LLM Connection — bottom section */}
+      <div className="border-t border-gray-100 px-4 py-3">
+        <button
+          onClick={() => setLlmOpen(!llmOpen)}
+          className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700"
+        >
+          <Bot size={16} className="text-gray-500" />
+          <span className="flex-1 text-left font-medium">
+            {lang === 'zh' ? '大模型' : 'LLM'}
+          </span>
+          <span className={`w-2.5 h-2.5 rounded-full ${statusDot}`} />
+        </button>
+
+        {/* LLM Settings Popover */}
+        {llmOpen && (
+          <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500 uppercase">
+                Gemini API
+              </span>
+              <button onClick={() => setLlmOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Status */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className={`w-2 h-2 rounded-full ${statusDot}`} />
+              <span className="text-gray-600">{statusText}</span>
+            </div>
+
+            {/* API Key */}
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                setLlmStatus('disconnected');
+              }}
+              placeholder="API Key..."
+              className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            {/* Verify button */}
+            <button
+              onClick={handleVerifyLlm}
+              disabled={llmStatus === 'connecting' || !apiKey.trim()}
+              className={`w-full py-1.5 rounded-md text-xs font-medium transition-colors ${
+                llmStatus === 'connecting' || !apiKey.trim()
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : llmStatus === 'connected'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {llmStatus === 'connecting'
+                ? (lang === 'zh' ? '验证中...' : 'Verifying...')
+                : llmStatus === 'connected'
+                  ? (lang === 'zh' ? '✓ 已连接' : '✓ Connected')
+                  : (lang === 'zh' ? '验证连接' : 'Verify')}
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );
