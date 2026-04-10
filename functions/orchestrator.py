@@ -3,7 +3,6 @@ Scraper orchestration — runs enabled scrapers, writes results to Firestore.
 Replaces the main() function from pipeline_descriptions.py.
 """
 import time
-from google.cloud import firestore
 from postprocess import postprocess_records, DEFAULT_DLC_KEYWORDS
 
 # Source → category mapping
@@ -110,8 +109,15 @@ def run_pipeline(config: dict, run_id: str = None):
     Returns:
         Number of records saved.
     """
-    db = firestore.Client()
-    run_ref = db.collection("scrapeRuns").document(run_id) if run_id else None
+    db = None
+    run_ref = None
+    if run_id:
+        try:
+            from google.cloud import firestore as _firestore
+            db = _firestore.Client()
+            run_ref = db.collection("scrapeRuns").document(run_id)
+        except Exception:
+            pass
 
     def update_run(**fields):
         if run_ref:
@@ -218,20 +224,24 @@ def run_pipeline(config: dict, run_id: str = None):
     update_run(progressMessage="Post-processing...")
     final = postprocess_records(all_records, cat_cfg, language_filter)
 
-    # Write to Firestore in batches
-    update_run(progressMessage=f"Writing {len(final)} records to Firestore...")
-    BATCH_SIZE = 500
+    # Write to Firestore in batches (skip if no db connection)
     written = 0
-    for i in range(0, len(final), BATCH_SIZE):
-        batch = db.batch()
-        chunk = final[i:i + BATCH_SIZE]
-        for r in chunk:
-            doc_id = r.get("id", f"auto_{written}")
-            safe_id = doc_id.replace("/", "_")
-            batch.set(db.collection("records").document(safe_id), r)
-        batch.commit()
-        written += len(chunk)
-        update_run(savedCount=written, progressMessage=f"Saved {written}/{len(final)}")
+    if db:
+        update_run(progressMessage=f"Writing {len(final)} records to Firestore...")
+        BATCH_SIZE = 500
+        for i in range(0, len(final), BATCH_SIZE):
+            batch = db.batch()
+            chunk = final[i:i + BATCH_SIZE]
+            for r in chunk:
+                doc_id = r.get("id", f"auto_{written}")
+                safe_id = doc_id.replace("/", "_")
+                batch.set(db.collection("records").document(safe_id), r)
+            batch.commit()
+            written += len(chunk)
+            update_run(savedCount=written, progressMessage=f"Saved {written}/{len(final)}")
+    else:
+        written = len(final)
+        print(f"[local mode] Skipping Firestore write. {written} records ready.", flush=True)
 
     update_run(
         status="completed",

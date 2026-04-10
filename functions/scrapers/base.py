@@ -5,7 +5,6 @@ Replaces the global helpers from the monolithic pipeline_descriptions.py.
 import time
 import re
 import requests
-from google.cloud import firestore, storage
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
@@ -46,7 +45,8 @@ def upload_cover_to_storage(image_url: str, record_id: str, referer: str = "") -
             return ""
         data = r.content
 
-        bucket = storage.Client().bucket()
+        from google.cloud import storage as gcs
+        bucket = gcs.Client().bucket()
         blob = bucket.blob(storage_path)
         if blob.exists():
             return storage_path
@@ -68,7 +68,11 @@ class ProgressTracker:
 
     def __init__(self, run_id: str = None):
         self.run_id = run_id
-        self.db = firestore.Client() if run_id else None
+        if run_id:
+            from google.cloud import firestore
+            self.db = firestore.Client()
+        else:
+            self.db = None
         self.log_lines = []
 
     def emit_stage(self, idx: int, total: int, name: str):
