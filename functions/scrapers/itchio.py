@@ -3,7 +3,7 @@ import time
 
 from bs4 import BeautifulSoup
 
-from .base import safe_get, download_cover
+from scrapers.base import safe_get, download_cover
 
 
 def _scrape_itchio_game(url):

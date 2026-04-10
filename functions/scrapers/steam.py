@@ -4,7 +4,7 @@ import time
 
 from bs4 import BeautifulSoup
 
-from .base import safe_get, SESSION, download_cover
+from scrapers.base import safe_get, SESSION, download_cover
 
 
 def _steam_appdetails(appid):

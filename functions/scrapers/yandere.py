@@ -8,7 +8,7 @@ Phase B: For each artist, fetch top-scored posts and aggregate style tags.
 import time
 from collections import Counter
 
-from .base import safe_get
+from scrapers.base import safe_get
 
 
 YANDERE_TAG_URL = "https://yande.re/tag.json"

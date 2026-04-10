@@ -4,7 +4,7 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
-from .base import safe_get, download_cover
+from scrapers.base import safe_get, download_cover
 
 
 def scrape_erogames_descriptions(keywords, max_per_keyword=15, max_total=300):

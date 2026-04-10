@@ -3,7 +3,7 @@ import time
 
 import requests
 
-from .base import safe_get, download_cover
+from scrapers.base import safe_get, download_cover
 
 
 def scrape_mangadex(keywords, max_per_keyword=50, max_total=300):

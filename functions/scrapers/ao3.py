@@ -8,7 +8,7 @@ import time
 
 from bs4 import BeautifulSoup
 
-from .base import safe_get
+from scrapers.base import safe_get
 
 
 def _scrape_ao3_html(keywords, max_per_keyword, max_total):

@@ -3,7 +3,7 @@ import time
 
 from bs4 import BeautifulSoup
 
-from .base import safe_get, download_cover
+from scrapers.base import safe_get, download_cover
 
 
 def scrape_otome_obsessed_descriptions(keywords, max_per_keyword=50, max_total=300):

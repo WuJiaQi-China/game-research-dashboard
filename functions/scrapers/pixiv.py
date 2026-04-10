@@ -8,7 +8,7 @@ import re
 import time
 from collections import Counter
 
-from .base import safe_get
+from scrapers.base import safe_get
 
 
 # Tags too generic to be meaningful style indicators

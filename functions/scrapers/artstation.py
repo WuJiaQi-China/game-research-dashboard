@@ -7,7 +7,7 @@ Aggregates per-artist stats from trending project listings across up to 10 pages
 import time
 from collections import Counter
 
-from .base import safe_get
+from scrapers.base import safe_get
 
 
 ARTSTATION_URL = "https://www.artstation.com/projects.json"

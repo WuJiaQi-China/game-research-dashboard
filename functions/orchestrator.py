@@ -4,7 +4,7 @@ Replaces the main() function from pipeline_descriptions.py.
 """
 import time
 from google.cloud import firestore
-from .postprocess import postprocess_records, DEFAULT_DLC_KEYWORDS
+from postprocess import postprocess_records, DEFAULT_DLC_KEYWORDS
 
 # Source → category mapping
 GAME_SOURCES = {"vndb", "itchio", "erogames", "steam", "dlsite",
@@ -46,55 +46,55 @@ def source_category(key):
 def _get_scraper(stage_key):
     """Lazy import scraper functions to avoid loading all modules at once."""
     if stage_key == "vndb":
-        from .scrapers.vndb import fetch_vndb_descriptions
+        from scrapers.vndb import fetch_vndb_descriptions
         return fetch_vndb_descriptions
     elif stage_key == "itchio":
-        from .scrapers.itchio import scrape_itchio_descriptions
+        from scrapers.itchio import scrape_itchio_descriptions
         return scrape_itchio_descriptions
     elif stage_key == "erogames":
-        from .scrapers.erogames import scrape_erogames_descriptions
+        from scrapers.erogames import scrape_erogames_descriptions
         return scrape_erogames_descriptions
     elif stage_key == "steam":
-        from .scrapers.steam import scrape_steam_descriptions
+        from scrapers.steam import scrape_steam_descriptions
         return scrape_steam_descriptions
     elif stage_key == "dlsite":
-        from .scrapers.dlsite import scrape_dlsite_descriptions
+        from scrapers.dlsite import scrape_dlsite_descriptions
         return scrape_dlsite_descriptions
     elif stage_key == "nutaku":
-        from .scrapers.nutaku import scrape_nutaku_descriptions
+        from scrapers.nutaku import scrape_nutaku_descriptions
         return scrape_nutaku_descriptions
     elif stage_key == "hanako":
-        from .scrapers.hanako import scrape_hanako_descriptions
+        from scrapers.hanako import scrape_hanako_descriptions
         return scrape_hanako_descriptions
     elif stage_key == "otome_obsessed":
-        from .scrapers.otome_obsessed import scrape_otome_obsessed_descriptions
+        from scrapers.otome_obsessed import scrape_otome_obsessed_descriptions
         return scrape_otome_obsessed_descriptions
     elif stage_key == "wattpad":
-        from .scrapers.wattpad import scrape_wattpad
+        from scrapers.wattpad import scrape_wattpad
         return scrape_wattpad
     elif stage_key == "webtoons":
-        from .scrapers.webtoons import scrape_webtoons
+        from scrapers.webtoons import scrape_webtoons
         return scrape_webtoons
     elif stage_key == "mangadex":
-        from .scrapers.mangadex import scrape_mangadex
+        from scrapers.mangadex import scrape_mangadex
         return scrape_mangadex
     elif stage_key == "ao3":
-        from .scrapers.ao3 import scrape_ao3
+        from scrapers.ao3 import scrape_ao3
         return scrape_ao3
     elif stage_key == "dreame":
-        from .scrapers.dreame import scrape_dreame
+        from scrapers.dreame import scrape_dreame
         return scrape_dreame
     elif stage_key == "jjwxc":
-        from .scrapers.jjwxc import scrape_jjwxc
+        from scrapers.jjwxc import scrape_jjwxc
         return scrape_jjwxc
     elif stage_key == "pixiv":
-        from .scrapers.pixiv import scrape_pixiv_artists
+        from scrapers.pixiv import scrape_pixiv_artists
         return scrape_pixiv_artists
     elif stage_key == "artstation":
-        from .scrapers.artstation import scrape_artstation_artists
+        from scrapers.artstation import scrape_artstation_artists
         return scrape_artstation_artists
     elif stage_key == "yandere":
-        from .scrapers.yandere import scrape_yandere_artists
+        from scrapers.yandere import scrape_yandere_artists
         return scrape_yandere_artists
     return None
 

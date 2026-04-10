@@ -2,7 +2,7 @@
 import re
 import time
 
-from .base import SESSION, download_cover
+from scrapers.base import SESSION, download_cover
 
 
 # Keyword -> VNDB tag_id mapping
