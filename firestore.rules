@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Records: readable by anyone, writable by Cloud Functions only
+    match /records/{docId} {
+      allow read: if true;
+      allow write: if false; // Only via admin SDK in Cloud Functions
+    }
+    // Scrape config: readable and writable (no auth for prototype)
+    match /scrapeConfigs/{docId} {
+      allow read, write: if true;
+    }
+    // Scrape runs: readable by anyone, writable by Cloud Functions
+    match /scrapeRuns/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // Trend analyses: readable by anyone
+    match /trendAnalyses/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // LLM settings
+    match /llmSettings/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -1,0 +1,12 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /covers/{allPaths=**} {
+      allow read: if true;
+      allow write: if false; // Only via admin SDK
+    }
+    match /migration/{allPaths=**} {
+      allow read, write: if true; // Temporary for migration
+    }
+  }
+}
