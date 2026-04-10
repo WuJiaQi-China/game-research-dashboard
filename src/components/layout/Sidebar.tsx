@@ -17,7 +17,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { TYPE_LABELS } from '@/lib/constants';
 import type { ContentType } from '@/lib/types';
 
-const DEFAULT_GEMINI_KEY = 'REDACTED';
+const DEFAULT_GEMINI_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 
 const typeFilters: { key: ContentType; icon: typeof Gamepad2 }[] = [
   { key: 'game', icon: Gamepad2 },
