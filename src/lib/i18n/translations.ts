@@ -9,10 +9,10 @@ export const translations = {
   ui_lang:              { zh: '界面语言',               en: 'UI Language' },
 
   // ─── Tab names ──────────────────────────────────────────────────────────
-  tab_browse:           { zh: '📋 资源浏览',            en: '📋 Resource Browser' },
-  tab_trends:           { zh: '📊 趋势分析',            en: '📊 Trend Analysis' },
-  tab_art:              { zh: '🎨 画风分析',             en: '🎨 Art Style' },
-  tab_deep:             { zh: '⚙️ 爬虫设置',            en: '⚙️ Scraper Settings' },
+  tab_browse:           { zh: '资源浏览',                en: 'Resource Browser' },
+  tab_trends:           { zh: '趋势分析',                en: 'Trend Analysis' },
+  tab_art:              { zh: '画风分析',                 en: 'Art Style' },
+  tab_deep:             { zh: '爬虫设置',                en: 'Scraper Settings' },
 
   // ─── Tab 1 – Browse ────────────────────────────────────────────────────
   filtered_results:     { zh: '筛选结果',               en: 'Filtered' },

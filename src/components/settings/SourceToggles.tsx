@@ -70,7 +70,7 @@ function CategorySection({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-3 mb-2">
         <h3 className="text-sm font-semibold text-gray-700">
           {emoji} {title}
         </h3>
