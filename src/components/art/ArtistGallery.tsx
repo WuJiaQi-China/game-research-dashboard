@@ -13,7 +13,7 @@ export function ArtistGallery({ artists }: ArtistGalleryProps) {
   const visible = artists.slice(0, 20);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
       {visible.map((artist) => (
         <ArtistCard
           key={artist.id}
