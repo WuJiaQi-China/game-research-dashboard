@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+/* Global: all clickable elements show pointer cursor */
+button,
+a,
+[role="switch"],
+[role="tab"],
+[role="button"],
+select,
+summary,
+label.cursor-pointer {
+  cursor: pointer;
+}
