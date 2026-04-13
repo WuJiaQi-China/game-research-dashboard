@@ -21,10 +21,10 @@ export const SOURCE_COLORS: Record<string, string> = {
 };
 
 export const TYPE_LABELS: Record<string, { zh: string; en: string }> = {
-  game: { zh: '🎮 游戏', en: '🎮 Game' },
-  novel: { zh: '📖 小说', en: '📖 Novel' },
-  comic: { zh: '📚 漫画', en: '📚 Comic' },
-  artist: { zh: '🎨 画师', en: '🎨 Artist' },
+  game: { zh: '游戏', en: 'Game' },
+  novel: { zh: '小说', en: 'Novel' },
+  comic: { zh: '漫画', en: 'Comic' },
+  artist: { zh: '画师', en: 'Artist' },
 };
 
 export const GAME_SOURCES = ['vndb', 'itchio', 'erogames', 'steam', 'dlsite', 'nutaku', 'gamejolt', 'lemmasoft', 'hanako', 'otome_obsessed'];

@@ -12,10 +12,10 @@ interface KeywordConfigProps {
 type CategoryKey = 'game' | 'novel' | 'comic' | 'artist';
 
 const TABS: { key: CategoryKey; emoji: string; label: string }[] = [
-  { key: 'game', emoji: '🎮', label: 'Game' },
-  { key: 'novel', emoji: '📖', label: 'Novel' },
-  { key: 'comic', emoji: '📚', label: 'Comic' },
-  { key: 'artist', emoji: '🎨', label: 'Artist' },
+  { key: 'game', emoji: '', label: 'Game' },
+  { key: 'novel', emoji: '', label: 'Novel' },
+  { key: 'comic', emoji: '', label: 'Comic' },
+  { key: 'artist', emoji: '', label: 'Artist' },
 ];
 
 const DEFAULT_CATEGORY: CategoryConfig = {

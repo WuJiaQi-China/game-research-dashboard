@@ -122,10 +122,10 @@ export function SourceToggles({ config, onChange }: SourceTogglesProps) {
   );
 
   const categories: { emoji: string; title: string; sources: string[] }[] = [
-    { emoji: '🎮', title: 'Game', sources: GAME_SOURCES },
-    { emoji: '📖', title: 'Novel', sources: NOVEL_SOURCES },
-    { emoji: '📚', title: 'Comic', sources: COMIC_SOURCES },
-    { emoji: '🎨', title: 'Artist', sources: ARTIST_SOURCES },
+    { emoji: '', title: 'Game', sources: GAME_SOURCES },
+    { emoji: '', title: 'Novel', sources: NOVEL_SOURCES },
+    { emoji: '', title: 'Comic', sources: COMIC_SOURCES },
+    { emoji: '', title: 'Artist', sources: ARTIST_SOURCES },
   ];
 
   return (
