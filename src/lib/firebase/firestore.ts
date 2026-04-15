@@ -1,7 +1,7 @@
 import { db } from './config';
 import {
   collection, query, where, orderBy, limit, getDocs,
-  doc, getDoc, setDoc, onSnapshot,
+  doc, getDoc, setDoc, onSnapshot, writeBatch,
   type QueryConstraint, type DocumentData,
 } from 'firebase/firestore';
 import type { ContentRecord, ScrapeConfig, ScrapeRun } from '@/lib/types';
@@ -37,6 +37,18 @@ export async function fetchConfig(): Promise<ScrapeConfig | null> {
 
 export async function saveConfig(config: Partial<ScrapeConfig>): Promise<void> {
   await setDoc(doc(db, CONFIG_DOC), config, { merge: true });
+}
+
+export async function deleteRecords(ids: string[]): Promise<void> {
+  // Firestore batch limit is 500
+  for (let i = 0; i < ids.length; i += 500) {
+    const chunk = ids.slice(i, i + 500);
+    const batch = writeBatch(db);
+    for (const id of chunk) {
+      batch.delete(doc(db, RECORDS_COL, id));
+    }
+    await batch.commit();
+  }
 }
 
 export function subscribeScrapeRun(

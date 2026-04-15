@@ -1,10 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Records: readable by anyone, writable by Cloud Functions only
+    // Records: readable by anyone, delete-only from client, create/update via Cloud Functions
     match /records/{docId} {
       allow read: if true;
-      allow write: if false; // Only via admin SDK in Cloud Functions
+      allow delete: if true;          // Client can delete (used by /browse UI)
+      allow create, update: if false; // Only via admin SDK in Cloud Functions
     }
     // Scrape config: readable and writable (no auth for prototype)
     match /scrapeConfigs/{docId} {

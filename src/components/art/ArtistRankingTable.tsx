@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { ExternalLink, ArrowUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { useI18n } from '@/lib/i18n/context';
+import { safeImageUrl } from '@/lib/imageUrl';
 import type { ArtistRecord } from '@/lib/types';
 
 type SortField = 'totalViews' | 'totalWorks' | 'followerCount';
@@ -85,7 +86,7 @@ export function ArtistRankingTable({ artists }: ArtistRankingTableProps) {
               <td className="py-2 px-2">
                 {artist.imageUrl ? (
                   <img
-                    src={artist.imageUrl}
+                    src={safeImageUrl(artist.imageUrl)}
                     alt={artist.name}
                     className="w-7 h-7 rounded-full object-cover"
                     loading="lazy"

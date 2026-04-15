@@ -207,6 +207,23 @@ export const translations = {
   nsfw_filter_help:     { zh: '启用后仅抓取全年龄内容（Pixiv 过滤 R-18 标签，Yande.re 过滤 rating:safe，ArtStation 过滤 adult_content）',
                           en: 'When enabled, only fetch SFW content (Pixiv: filter R-18 tags, Yande.re: rating:safe only, ArtStation: filter adult_content)' },
 
+  // ─── Delete ────────────────────────────────────────────────────────────
+  delete_selected:      { zh: '删除所选 ({})',             en: 'Delete Selected ({})' },
+  delete_confirm:       { zh: '确认删除',                  en: 'Confirm Delete' },
+  delete_confirm_msg:   { zh: '确定要删除 {} 条记录吗？此操作不可撤销。',
+                          en: 'Delete {} records? This cannot be undone.' },
+  delete_cancel:        { zh: '取消',                     en: 'Cancel' },
+  delete_failed:        { zh: '删除失败',                  en: 'Delete failed' },
+
+  // ─── Filter bar / clear ────────────────────────────────────────────────
+  tag_filter:           { zh: '标签筛选',                 en: 'Tag filter' },
+  tag_filter_ph:        { zh: '输入标签...',              en: 'Enter tag...' },
+  title_filter_ph:      { zh: '标题关键词...',            en: 'Title keyword...' },
+  clear_filters:        { zh: '清除筛选',                 en: 'Clear filters' },
+  date_from:            { zh: '起始日期',                 en: 'From date' },
+  date_to:              { zh: '结束日期',                 en: 'To date' },
+  all_types:            { zh: '全部类型',                 en: 'All types' },
+
   // ─── Generic / shared ──────────────────────────────────────────────────
   no_data:              { zh: '暂无数据。',               en: 'No data available.' },
   no_data_hint:         { zh: '暂无数据。请在设置中运行爬取。', en: 'No data. Run scraper in Settings.' },

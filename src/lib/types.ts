@@ -79,6 +79,14 @@ export interface ScrapeRun {
   error?: string;
 }
 
+export type HookType = 'text_overlay' | 'choice' | 'button' | 'swipe' | 'slider';
+
+export interface AdCreative {
+  visualDescription: string;
+  hookType: HookType;
+  hookContent: string;
+}
+
 export interface TrendItem {
   rank: number;
   name: string;
@@ -86,6 +94,7 @@ export interface TrendItem {
   representativeTags: string[];
   exampleTitles: string[];
   score: number;
+  adCreatives?: AdCreative[];
 }
 
 export interface TrendAnalysis {

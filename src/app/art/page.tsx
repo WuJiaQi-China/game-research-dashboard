@@ -51,7 +51,7 @@ export default function ArtPage() {
         ? `${(n / 1_000).toFixed(1)}K`
         : String(n);
 
-  if (isLoading) {
+  if (!allArtists?.length && isLoading) {
     return <LoadingSpinner />;
   }
 
@@ -88,7 +88,7 @@ export default function ArtPage() {
       </div>
 
       {/* Artist Gallery */}
-      <CollapsibleSection title={t('art_gallery')} defaultOpen={true}>
+      <CollapsibleSection title={t('art_gallery')} defaultOpen={false}>
         <ArtistGallery artists={topArtists} />
       </CollapsibleSection>
 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ExternalLink, ChevronDown, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { findSimilarArtists } from '@/lib/analysis/jaccardSimilarity';
+import { safeImageUrl } from '@/lib/imageUrl';
 import type { ArtistRecord } from '@/lib/types';
 
 interface ArtistCardProps {
@@ -35,7 +36,7 @@ export function ArtistCard({ artist, allArtists, lang }: ArtistCardProps) {
           {samples.map((sw, i) => (
             <img
               key={sw.illustId || i}
-              src={sw.imageUrl}
+              src={safeImageUrl(sw.imageUrl)}
               alt={sw.title}
               className="h-[70px] w-auto object-cover rounded"
               loading="lazy"

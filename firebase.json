@@ -3,7 +3,17 @@
     "public": "out",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "cleanUrls": true,
-    "trailingSlash": false
+    "trailingSlash": false,
+    "headers": [
+      {
+        "source": "**/*.html",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=600, s-maxage=3600" }]
+      },
+      {
+        "source": "**/__next*",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=60" }]
+      }
+    ]
   },
   "functions": [
     {

@@ -2,11 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Search,
-  Gamepad2,
-  BookOpen,
-  BookImage,
-  Palette,
   ChevronLeft,
   ChevronRight,
   Languages,
@@ -15,15 +10,6 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/context';
-import { TYPE_LABELS } from '@/lib/constants';
-import type { ContentType } from '@/lib/types';
-
-const typeFilters: { key: ContentType; icon: typeof Gamepad2 }[] = [
-  { key: 'game', icon: Gamepad2 },
-  { key: 'novel', icon: BookOpen },
-  { key: 'comic', icon: BookImage },
-  { key: 'artist', icon: Palette },
-];
 
 type LlmStatus = 'disconnected' | 'connecting' | 'connected';
 
@@ -76,10 +62,8 @@ function saveLlmSettings(settings: LlmSettings) {
 }
 
 export function Sidebar() {
-  const { lang, setLang, t } = useI18n();
+  const { lang, setLang } = useI18n();
   const [collapsed, setCollapsed] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTypes, setActiveTypes] = useState<Set<ContentType>>(new Set());
 
   // LLM state — persisted to localStorage
   const [llmOpen, setLlmOpen] = useState(false);
@@ -96,15 +80,6 @@ export function Sidebar() {
   useEffect(() => {
     if (mounted) saveLlmSettings(llm);
   }, [llm, mounted]);
-
-  const toggleType = (key: ContentType) => {
-    setActiveTypes((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
 
   const toggleLang = () => setLang(lang === 'zh' ? 'en' : 'zh');
 
@@ -185,52 +160,8 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="px-4 py-3">
-        <div className="relative">
-          <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('search_placeholder')}
-            className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400"
-          />
-        </div>
-      </div>
-
-      {/* Scrollable filter area */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {/* Type Filter */}
-        <div className="mb-4">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            {t('content_type')}
-          </h3>
-          <div className="space-y-1">
-            {typeFilters.map(({ key, icon: Icon }) => {
-              const active = activeTypes.has(key);
-              const label = TYPE_LABELS[key]?.[lang] ?? key;
-              return (
-                <label
-                  key={key}
-                  className={`flex items-center gap-2.5 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors ${
-                    active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={active}
-                    onChange={() => toggleType(key)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <Icon size={15} />
-                  <span>{label}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      {/* Spacer so the LLM panel stays anchored at the bottom */}
+      <div className="flex-1" />
 
       {/* LLM Connection — bottom section */}
       <div className="border-t border-gray-100 px-4 py-3">
