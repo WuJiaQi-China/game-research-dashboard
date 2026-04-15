@@ -7,6 +7,7 @@ import { deleteRecords } from '@/lib/firebase/firestore';
 import { useT } from '@/lib/i18n/context';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { KpiCards } from '@/components/browse/KpiCards';
 import { SourcePieChart } from '@/components/browse/SourcePieChart';
 import { TagBarChart } from '@/components/browse/TagBarChart';
@@ -129,25 +130,17 @@ export default function BrowsePage() {
       {/* KPI Cards */}
       <KpiCards records={filtered} />
 
-      {/* Charts -- collapsible */}
-      <details className="group" open>
-        <summary className="cursor-pointer select-none text-sm font-semibold text-gray-700 flex items-center gap-1">
-          <span className="transition-transform group-open:rotate-90">&#9654;</span>
-          {t('source_dist')}
-        </summary>
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts */}
+      <CollapsibleSection title={t('source_dist')} defaultOpen={true}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SourcePieChart records={filtered} />
           <TagBarChart records={filtered} />
         </div>
-      </details>
+      </CollapsibleSection>
 
-      {/* Resource Table -- collapsible */}
-      <details className="group" open>
-        <summary className="cursor-pointer select-none text-sm font-semibold text-gray-700 flex items-center gap-1">
-          <span className="transition-transform group-open:rotate-90">&#9654;</span>
-          {t('resource_table')}
-        </summary>
-        <div className="mt-4 space-y-3">
+      {/* Resource Table */}
+      <CollapsibleSection title={t('resource_table')} defaultOpen={true}>
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500">
               {t('n_records').replace('{}', String(filtered.length))}
@@ -156,7 +149,7 @@ export default function BrowsePage() {
           </div>
           <ResourceTable records={filtered} onDelete={handleDelete} />
         </div>
-      </details>
+      </CollapsibleSection>
     </div>
   );
 }
