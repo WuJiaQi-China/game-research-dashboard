@@ -1,17 +1,33 @@
 'use client';
 
 import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { Users, Eye, Globe } from 'lucide-react';
 import { useI18n, useT } from '@/lib/i18n/context';
 import { useArtists, useTopArtists } from '@/lib/hooks/useArtists';
 import { MetricCard } from '@/components/ui/MetricCard';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
-import { ArtistGallery } from '@/components/art/ArtistGallery';
-import { StyleTagChart } from '@/components/art/StyleTagChart';
-import { ToolsDistChart } from '@/components/art/ToolsDistChart';
-import { ArtistRankingTable } from '@/components/art/ArtistRankingTable';
+
+// Code-split heavy components — all are inside CollapsibleSection blocks and
+// only ArtistGallery renders immediately (its section defaults to collapsed now
+// too, so it's just as deferred as the others).
+const ArtistGallery = dynamic(
+  () => import('@/components/art/ArtistGallery').then(m => ({ default: m.ArtistGallery })),
+  { ssr: false },
+);
+const StyleTagChart = dynamic(
+  () => import('@/components/art/StyleTagChart').then(m => ({ default: m.StyleTagChart })),
+  { ssr: false },
+);
+const ToolsDistChart = dynamic(
+  () => import('@/components/art/ToolsDistChart').then(m => ({ default: m.ToolsDistChart })),
+  { ssr: false },
+);
+const ArtistRankingTable = dynamic(
+  () => import('@/components/art/ArtistRankingTable').then(m => ({ default: m.ArtistRankingTable })),
+  { ssr: false },
+);
 
 export default function ArtPage() {
   const t = useT();
@@ -51,11 +67,9 @@ export default function ArtPage() {
         ? `${(n / 1_000).toFixed(1)}K`
         : String(n);
 
-  if (!allArtists?.length && isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!allArtists.length) {
+  // Only short-circuit to empty-state once the query has resolved with zero rows.
+  // While loading, render the full page shell so the tab click feels instant.
+  if (!isLoading && allArtists.length === 0) {
     return (
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('tab_art')}</h1>

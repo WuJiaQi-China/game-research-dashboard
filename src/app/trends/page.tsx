@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   TrendingUp, Bot, Play, Loader2, RefreshCw, Clock, X,
 } from 'lucide-react';
@@ -9,13 +10,21 @@ import { useI18n } from '@/lib/i18n/context';
 import { useRecords } from '@/lib/hooks/useRecords';
 import { useAnalysis } from '@/components/providers/AnalysisProvider';
 import { MetricCard } from '@/components/ui/MetricCard';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { Badge } from '@/components/ui/Badge';
-import { TagFrequencyChart } from '@/components/trends/TagFrequencyChart';
-import { SiteComparisonMatrix } from '@/components/trends/SiteComparisonMatrix';
 import type { TrendItem, AdCreative, HookType, ContentRecord } from '@/lib/types';
+
+// Code-split heavy chart components — they only render inside CollapsibleSection
+// (default-collapsed), so keeping them out of the initial chunk shrinks it.
+const TagFrequencyChart = dynamic(
+  () => import('@/components/trends/TagFrequencyChart').then(m => ({ default: m.TagFrequencyChart })),
+  { ssr: false },
+);
+const SiteComparisonMatrix = dynamic(
+  () => import('@/components/trends/SiteComparisonMatrix').then(m => ({ default: m.SiteComparisonMatrix })),
+  { ssr: false },
+);
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -361,16 +370,16 @@ export default function TrendsPage() {
     setCreativeModal(item);
   }, []);
 
+  const safeRecords = records ?? [];
+
   const handleAnalyze = () => {
-    if (!llm?.apiKey || !records?.length) return;
-    startAnalysis(llm.apiKey, llm.model, records, lang);
+    if (!llm?.apiKey || !safeRecords.length) return;
+    startAnalysis(llm.apiKey, llm.model, safeRecords, lang);
   };
 
-  if (!records?.length && isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!records || records.length === 0) {
+  // Only short-circuit to empty-state once the query has resolved with zero rows.
+  // While loading, render the full page shell so the tab click feels instant.
+  if (!isLoading && safeRecords.length === 0) {
     return (
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('trend_header')}</h1>
@@ -380,12 +389,12 @@ export default function TrendsPage() {
   }
 
   // Build title→link lookup
-  const titleLinkMap = buildTitleLinkMap(records);
+  const titleLinkMap = buildTitleLinkMap(safeRecords);
 
   // KPI computations
   const uniqueTags = new Set<string>();
   const uniqueSources = new Set<string>();
-  for (const r of records) {
+  for (const r of safeRecords) {
     if (r.source) uniqueSources.add(r.source);
     for (const tag of r.tags ?? []) {
       const normalized = tag.trim().toLowerCase();
@@ -403,7 +412,7 @@ export default function TrendsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <MetricCard
           label={t('total_records')}
-          value={records.length}
+          value={safeRecords.length}
           icon={<TrendingUp size={20} />}
         />
         <MetricCard
@@ -544,12 +553,12 @@ export default function TrendsPage() {
 
       {/* Tag Frequency */}
       <CollapsibleSection title={t('tag_freq')} defaultOpen={false}>
-        <TagFrequencyChart records={records} />
+        <TagFrequencyChart records={safeRecords} />
       </CollapsibleSection>
 
       {/* Site Comparison */}
       <CollapsibleSection title={t('site_compare')} defaultOpen={false}>
-        <SiteComparisonMatrix records={records} />
+        <SiteComparisonMatrix records={safeRecords} />
       </CollapsibleSection>
 
       {/* Ad Creative Modal */}

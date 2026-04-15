@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { LayoutGrid, TrendingUp, Palette, Settings } from 'lucide-react';
 import { useT } from '@/lib/i18n/context';
 
@@ -14,7 +15,16 @@ const tabs = [
 
 export function NavTabs() {
   const pathname = usePathname();
+  const router = useRouter();
   const t = useT();
+
+  // Warm the route chunks for non-active tabs during idle time, so that
+  // clicking them doesn't pay the chunk download cost on first navigation.
+  useEffect(() => {
+    for (const { href } of tabs) {
+      if (href !== pathname) router.prefetch(href);
+    }
+  }, [pathname, router]);
 
   return (
     <nav className="bg-white border-b border-gray-200 px-6 shrink-0">
@@ -25,6 +35,7 @@ export function NavTabs() {
             <Link
               key={href}
               href={href}
+              onMouseEnter={() => router.prefetch(href)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 active
                   ? 'border-blue-600 text-blue-600'

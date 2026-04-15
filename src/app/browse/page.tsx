@@ -1,19 +1,30 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRecords } from '@/lib/hooks/useRecords';
 import { deleteRecords } from '@/lib/firebase/firestore';
 import { useT } from '@/lib/i18n/context';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { KpiCards } from '@/components/browse/KpiCards';
-import { SourcePieChart } from '@/components/browse/SourcePieChart';
-import { TagBarChart } from '@/components/browse/TagBarChart';
-import { ResourceTable } from '@/components/browse/ResourceTable';
 import { CsvExportButton } from '@/components/browse/CsvExportButton';
 import { Inbox, X } from 'lucide-react';
+
+// Code-split charts and the heavy resource table — keeps the browse shell chunk small.
+const SourcePieChart = dynamic(
+  () => import('@/components/browse/SourcePieChart').then(m => ({ default: m.SourcePieChart })),
+  { ssr: false },
+);
+const TagBarChart = dynamic(
+  () => import('@/components/browse/TagBarChart').then(m => ({ default: m.TagBarChart })),
+  { ssr: false },
+);
+const ResourceTable = dynamic(
+  () => import('@/components/browse/ResourceTable').then(m => ({ default: m.ResourceTable })),
+  { ssr: false },
+);
 
 interface TrendFilter {
   tags: string[];
@@ -70,11 +81,9 @@ export default function BrowsePage() {
     });
   }, [records, trendFilter]);
 
-  if (!records?.length && isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!records || records.length === 0) {
+  // Only short-circuit to empty-state once the query has resolved with zero rows.
+  // While loading, render the full page shell so the tab click feels instant.
+  if (!isLoading && (!records || records.length === 0)) {
     return (
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-4">
