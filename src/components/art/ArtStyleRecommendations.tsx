@@ -54,14 +54,16 @@ function SafeImage({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
   return (
-    <img
-      src={src}
-      alt={alt}
-      className="h-24 w-auto rounded-lg object-cover border border-gray-200"
-      onError={() => setFailed(true)}
-      referrerPolicy="no-referrer"
-      loading="lazy"
-    />
+    <a href={src} target="_blank" rel="noopener noreferrer">
+      <img
+        src={src}
+        alt={alt}
+        className="h-40 w-auto rounded-lg object-cover border border-gray-200 hover:shadow-md hover:border-purple-300 transition-all cursor-pointer"
+        onError={() => setFailed(true)}
+        referrerPolicy="no-referrer"
+        loading="lazy"
+      />
+    </a>
   );
 }
 
@@ -126,10 +128,13 @@ function StyleCard({
 
       {/* Sample images */}
       {visibleImages.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto py-1">
-          {visibleImages.slice(0, 4).map((url, i) => (
-            <SafeImage key={i} src={url} alt={`${displayName} sample ${i + 1}`} />
-          ))}
+        <div>
+          <p className="text-xs text-gray-400 mb-2">{t('art_sample_works')}</p>
+          <div className="flex gap-3 overflow-x-auto py-1">
+            {visibleImages.map((url, i) => (
+              <SafeImage key={i} src={url} alt={`${displayName} sample ${i + 1}`} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -212,9 +217,26 @@ export function ArtStyleRecommendations() {
 
     const langLabel = lang === 'zh' ? 'Chinese' : 'English';
 
-    const prompt = `You are a game art market analyst. Search the internet for the latest trends and recommend 5 art styles best suited for interactive narrative / romance games right now.
+    const prompt = `You are a game art market analyst. Search the internet for the latest trends and recommend 5 art styles best suited for interactive narrative / romance games (otome games, visual novels, chat-story games like MeChat, Episode, Love and Deepspace, etc.) right now.
 
-Base your analysis on the latest data from CivitAI trending models, ArtStation trends, Pixiv popular tags, and other current sources.
+IMPORTANT: Your analysis must cover BOTH creator-side AND consumer/player-side sources:
+
+**Consumer & player-facing sources (prioritize these):**
+- Reddit communities: r/otomegames, r/RomanceBooks, r/visualnovels, r/mobilegaming — what art styles do players praise or complain about?
+- App Store & Google Play reviews of top romance/interactive story games — which games get praised for their art?
+- Steam reviews & wishlists for visual novels — player sentiment on art styles
+- TikTok / Instagram / YouTube — which game ad art styles get the most engagement?
+- Game community forums & Discord discussions
+
+**Creator-side sources:**
+- CivitAI trending models (for AI art production reference)
+- ArtStation trending projects
+- Pixiv popular tags & ranking
+
+For each recommended style, you MUST provide 2-4 direct image URLs that demonstrate the style. Prefer image URLs from:
+- CivitAI model preview images (e.g. https://image.civitai.com/...)
+- ArtStation CDN images
+- Any publicly accessible direct image link (.jpg, .png, .webp)
 
 Return JSON wrapped in \`\`\`json fences:
 {
@@ -222,23 +244,24 @@ Return JSON wrapped in \`\`\`json fences:
     {
       "name": "Style name in ${langLabel}",
       "name_en": "English Name",
-      "description": "Recommendation reason (2-3 sentences citing real current trends you found)",
+      "description": "Why this style works NOW — cite specific player feedback, game success stories, or engagement data you found (3-4 sentences)",
       "keywords": ["semi-realism", "soft-shading", "..."],
       "facial_features": "Distinctive facial feature description (eyes, lips, shading details)",
-      "reference_urls": ["https://civitai.com/...", "https://..."],
-      "image_urls": ["https://... direct image URLs ..."],
+      "reference_urls": ["https://civitai.com/...", "https://reddit.com/...", "https://..."],
+      "image_urls": ["https://image.civitai.com/...", "https://cdna.artstation.com/..."],
       "score": 85
     }
   ],
-  "summary": "Overall art style trend overview in ${langLabel}"
+  "summary": "Overall art style trend overview covering both what creators produce and what players prefer, in ${langLabel}"
 }
 
 Requirements:
-- Base recommendations on the latest internet data you find, not on memorized knowledge
-- reference_urls: real CivitAI model pages, ArtStation portfolio pages, etc.
-- image_urls: directly embeddable image URLs (CivitAI previews, public gallery images, etc.)
+- Base recommendations on the latest internet data you find, NOT memorized knowledge
+- Combine creator trend data with player/consumer preference data
+- reference_urls: mix of CivitAI, Reddit threads, app store pages, game pages, etc.
+- image_urls: 2-4 directly embeddable image URLs per style (MUST be real, working URLs)
 - keywords: prompt keywords usable by AI art generation or art teams
-- score: 0-100 market popularity score
+- score: 0-100 market popularity score weighted by both creator adoption AND player reception
 - Respond entirely in ${langLabel}`;
 
     fetch(
