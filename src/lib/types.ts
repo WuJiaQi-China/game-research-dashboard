@@ -105,3 +105,21 @@ export interface TrendAnalysis {
   createdAt: any;
   recordCount: number;
 }
+
+// Art style recommendation (LLM-driven, no dependency on scraped data)
+export interface ArtStyleRecommendation {
+  name: string;
+  nameEn: string;
+  description: string;
+  keywords: string[];
+  facialFeatures: string;
+  referenceUrls: string[];
+  imageUrls: string[];
+  score: number;
+}
+
+export interface ArtStyleAnalysis {
+  styles: ArtStyleRecommendation[];
+  summary: string;
+  createdAt: string;
+}
