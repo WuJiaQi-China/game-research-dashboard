@@ -73,70 +73,69 @@ export default function ArtPage() {
 
   // Only short-circuit to empty-state once the query has resolved with zero rows.
   // While loading, render the full page shell so the tab click feels instant.
-  if (!isLoading && allArtists.length === 0) {
-    return (
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('tab_art')}</h1>
-        <EmptyState message={t('art_no_data')} />
-      </div>
-    );
-  }
+  const hasArtists = !isLoading && allArtists.length > 0;
 
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-bold text-gray-900">{t('tab_art')}</h1>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <MetricCard
-          label={t('art_total_artists')}
-          value={kpis.total}
-          icon={<Users size={20} />}
-        />
-        <MetricCard
-          label={t('art_avg_views')}
-          value={fmtNum(kpis.avgViews)}
-          icon={<Eye size={20} />}
-        />
-        <MetricCard
-          label={t('art_top_source')}
-          value={kpis.topSource}
-          icon={<Globe size={20} />}
-        />
-      </div>
+      {/* KPI row — only when we have artist data */}
+      {hasArtists && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <MetricCard
+            label={t('art_total_artists')}
+            value={kpis.total}
+            icon={<Users size={20} />}
+          />
+          <MetricCard
+            label={t('art_avg_views')}
+            value={fmtNum(kpis.avgViews)}
+            icon={<Eye size={20} />}
+          />
+          <MetricCard
+            label={t('art_top_source')}
+            value={kpis.topSource}
+            icon={<Globe size={20} />}
+          />
+        </div>
+      )}
 
-      {/* AI Art Style Recommendations */}
+      {/* AI Art Style Recommendations — always visible, independent of scraped data */}
       <CollapsibleSection title={t('art_style_reco')} defaultOpen={false}>
         <ArtStyleRecommendations />
       </CollapsibleSection>
 
-      {/* Artist Gallery */}
-      <CollapsibleSection title={t('art_gallery')} defaultOpen={false}>
-        <ArtistGallery artists={topArtists} />
-      </CollapsibleSection>
+      {/* Artist-dependent sections — only when data exists */}
+      {hasArtists ? (
+        <>
+          <CollapsibleSection title={t('art_gallery')} defaultOpen={false}>
+            <ArtistGallery artists={topArtists} />
+          </CollapsibleSection>
 
-      {/* Style Tag Analysis */}
-      <CollapsibleSection title={t('art_style_trends')} defaultOpen={false}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <h3 className="text-sm font-medium text-gray-600 mb-3">
-              {lang === 'zh' ? '画风标签 Top 25' : 'Style Tags Top 25'}
-            </h3>
-            <StyleTagChart artists={allArtists} />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-600 mb-3">
-              {t('art_tools')}
-            </h3>
-            <ToolsDistChart artists={allArtists} />
-          </div>
-        </div>
-      </CollapsibleSection>
+          <CollapsibleSection title={t('art_style_trends')} defaultOpen={false}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-600 mb-3">
+                  {lang === 'zh' ? '画风标签 Top 25' : 'Style Tags Top 25'}
+                </h3>
+                <StyleTagChart artists={allArtists} />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-600 mb-3">
+                  {t('art_tools')}
+                </h3>
+                <ToolsDistChart artists={allArtists} />
+              </div>
+            </div>
+          </CollapsibleSection>
 
-      {/* Artist Ranking */}
-      <CollapsibleSection title={t('art_ranking')} defaultOpen={false}>
-        <ArtistRankingTable artists={allArtists} />
-      </CollapsibleSection>
+          <CollapsibleSection title={t('art_ranking')} defaultOpen={false}>
+            <ArtistRankingTable artists={allArtists} />
+          </CollapsibleSection>
+        </>
+      ) : !isLoading ? (
+        <EmptyState message={t('art_no_data')} />
+      ) : null}
     </div>
   );
 }
