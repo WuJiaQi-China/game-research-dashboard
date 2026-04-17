@@ -99,11 +99,11 @@ function SafeImage({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
   return (
-    <a href={src} target="_blank" rel="noopener noreferrer">
+    <a href={src} target="_blank" rel="noopener noreferrer" className="shrink-0">
       <img
         src={src}
         alt={alt}
-        className="h-40 w-auto rounded-lg object-cover border border-gray-200 hover:shadow-md hover:border-purple-300 transition-all cursor-pointer"
+        className="h-[70px] w-auto object-cover rounded"
         onError={() => setFailed(true)}
         referrerPolicy="no-referrer"
         loading="lazy"
@@ -132,68 +132,69 @@ function StyleCard({
   const games = refs.filter(r => r.kind === 'game');
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-50 text-purple-600 font-bold text-sm shrink-0">
-            {style.rank}
-          </span>
-          <div className="min-w-0">
-            <h3 className="font-semibold text-gray-900 leading-tight truncate">{displayName}</h3>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 text-sm shrink-0">
-          <span className="text-gray-400">{t('art_style_score')}</span>
-          <span className="font-bold text-purple-600">{style.score}</span>
-        </div>
-      </div>
-
-      {/* Description */}
-      <p className="text-sm text-gray-600 leading-relaxed">{style.description}</p>
-
-      {/* Keywords */}
-      {keywords.length > 0 && (
-        <div>
-          <p className="text-xs text-gray-400 mb-1.5">{t('art_style_keywords')}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {keywords.map(kw => (
-              <Badge key={kw} color="#7C3AED">{kw}</Badge>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Sample images */}
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Thumbnail row — gallery-style (matches ArtistCard) */}
       {imageUrls.length > 0 && (
-        <div className="flex gap-3 overflow-x-auto py-1">
+        <div className="flex gap-1 overflow-hidden h-[70px] bg-gray-100">
           {imageUrls.map((url, i) => (
             <SafeImage key={i} src={url} alt={`${displayName} sample ${i + 1}`} />
           ))}
         </div>
       )}
 
-      {/* Reference games — each links to a Google search for the title */}
-      {games.length > 0 && (
-        <div>
-          <p className="text-xs text-gray-400 mb-1.5">{t('art_style_refs')}</p>
-          <div className="flex flex-wrap gap-2">
-            {games.map((r, i) => (
-              <a
-                key={`g-${i}`}
-                href={r.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
-                title={r.title}
-              >
-                <Gamepad2 size={12} />
-                {r.title}
-              </a>
-            ))}
+      {/* Card body */}
+      <div className="p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-purple-50 text-purple-600 font-bold text-sm shrink-0">
+              {style.rank}
+            </span>
+            <h3 className="font-semibold text-gray-900 leading-tight truncate">{displayName}</h3>
+          </div>
+          <div className="flex items-center gap-1.5 text-sm shrink-0">
+            <span className="text-gray-400 text-xs">{t('art_style_score')}</span>
+            <span className="font-bold text-purple-600">{style.score}</span>
           </div>
         </div>
-      )}
+
+        {/* Description */}
+        <p className="text-sm text-gray-600 leading-relaxed">{style.description}</p>
+
+        {/* Keywords */}
+        {keywords.length > 0 && (
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5">{t('art_style_keywords')}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {keywords.map(kw => (
+                <Badge key={kw} color="#7C3AED">{kw}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reference games — each links to a Google search for the title */}
+        {games.length > 0 && (
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5">{t('art_style_refs')}</p>
+            <div className="flex flex-wrap gap-2">
+              {games.map((r, i) => (
+                <a
+                  key={`g-${i}`}
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                  title={r.title}
+                >
+                  <Gamepad2 size={12} />
+                  {r.title}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -328,6 +329,15 @@ export function ArtStyleRecommendations() {
 
 **For each style, provide GAME TITLES ONLY for references — do NOT include URLs for references, as URLs often go stale. We will auto-generate search links from the titles.**
 
+**For each style, provide 2-4 SAMPLE IMAGE URLs that represent the visual style.** These MUST be real image URLs you encountered in your Google Search results. Preferred sources (in order of reliability):
+1. Steam CDN (cdn.cloudflare.steamstatic.com, shared.cloudflare.steamstatic.com)
+2. App Store / Google Play screenshot CDNs (is1-ssl.mzstatic.com, play-lh.googleusercontent.com)
+3. Official game Wikipedia/Fandom media (upload.wikimedia.org, static.wikia.nocookie.net)
+4. ArtStation CDN (cdna.artstation.com, cdnb.artstation.com)
+5. CivitAI model previews (image.civitai.com)
+
+**Do NOT fabricate image URLs.** If you cannot find 2+ verified image URLs for a style, return an empty array rather than guessing.
+
 **Return JSON wrapped in \`\`\`json fences:**
 {
   "queried_at": "${nowIso}",
@@ -339,7 +349,7 @@ export function ArtStyleRecommendations() {
       "description": "Why this style is trending NOW in Western markets during ${rangeHuman}. Cite specific games, player reactions, or press coverage you found. 3-4 sentences.",
       "keywords": ["semi-realism", "soft-shading", "cinematic lighting"],
       "reference_games": ["Love and Deepspace", "Mystic Messenger", "Episode: Choose Your Story"],
-      "image_urls": ["https://... only include direct image URLs you are highly confident exist ..."],
+      "image_urls": ["https://cdn.cloudflare.steamstatic.com/...", "https://upload.wikimedia.org/...", "... 2-4 real verified URLs ..."],
       "score": 92
     }
     /* ... 9 more, 10 total ... */
@@ -350,7 +360,7 @@ export function ArtStyleRecommendations() {
 **Requirements:**
 - Return EXACTLY 10 styles, ranked 1-10
 - "reference_games": an array of 2-5 real game titles (STRING array). NO URLs. We auto-generate Google search links.
-- "image_urls": ONLY include if you are highly confident the URL is a real, accessible image. Otherwise return an empty array. Do NOT hallucinate image URLs.
+- "image_urls": Provide 2-4 REAL image URLs from your search results, preferring the stable CDNs listed above. If you cannot find 2+ verified URLs, return an empty array — do NOT hallucinate URLs.
 - Do NOT use memorized knowledge — base everything on your search results within ${rangeHuman}
 - ALL text fields (name, description, keywords, summary) MUST be in ENGLISH only. Do not translate. Do not use Chinese.`;
 
