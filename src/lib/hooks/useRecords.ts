@@ -8,7 +8,7 @@ export function useRecords() {
   return useQuery<ContentRecord[]>({
     queryKey: ['records'],
     queryFn: fetchAllRecords,
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
   });
 }
 

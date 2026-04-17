@@ -10,9 +10,12 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 60 * 1000,
+            // Data is considered fresh forever; never go stale.
+            staleTime: Infinity,
             gcTime: Infinity,
+            refetchOnMount: false,
             refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
             // v5 equivalent of keepPreviousData — don't flash empty on refetch
             placeholderData: (prev: unknown) => prev,
           },
@@ -26,7 +29,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
     client.prefetchQuery({
       queryKey: ['records'],
       queryFn: fetchAllRecords,
-      staleTime: 5 * 60 * 1000,
+      staleTime: Infinity,
     });
   }, [client]);
 

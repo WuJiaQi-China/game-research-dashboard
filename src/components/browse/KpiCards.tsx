@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useDeferredValue } from 'react';
 import { Database, BookOpen, Globe } from 'lucide-react';
 import { MetricCard } from '@/components/ui/MetricCard';
 import { useT } from '@/lib/i18n/context';
+import { getBrowseKpis } from '@/lib/kpiCache';
 import type { ContentRecord } from '@/lib/types';
 
 interface KpiCardsProps {
@@ -13,15 +13,10 @@ interface KpiCardsProps {
 export function KpiCards({ records }: KpiCardsProps) {
   const t = useT();
 
-  // Defer heavy Set construction so the card frames can paint first,
-  // then the numbers fill in on a low-priority commit.
-  const deferredRecords = useDeferredValue(records);
-
-  const stats = useMemo(() => {
-    const uniqueTitles = new Set(deferredRecords.map((r) => r.title || r.name)).size;
-    const sitesCovered = new Set(deferredRecords.map((r) => r.source)).size;
-    return { total: deferredRecords.length, uniqueTitles, sitesCovered };
-  }, [deferredRecords]);
+  // Module-level WeakMap cache — first compute is 200-500ms, every subsequent
+  // render for the same `records` reference is O(1). Survives component
+  // unmount/remount, unlike useMemo.
+  const stats = getBrowseKpis(records);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

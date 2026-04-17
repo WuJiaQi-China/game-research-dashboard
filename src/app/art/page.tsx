@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo, useDeferredValue } from 'react';
 import dynamic from 'next/dynamic';
 import { Users, Eye, Globe } from 'lucide-react';
 import { useI18n, useT } from '@/lib/i18n/context';
@@ -8,6 +7,7 @@ import { useArtists, useTopArtists } from '@/lib/hooks/useArtists';
 import { MetricCard } from '@/components/ui/MetricCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
+import { getArtKpis } from '@/lib/kpiCache';
 
 // Code-split heavy components — all are inside CollapsibleSection blocks and
 // only ArtistGallery renders immediately (its section defaults to collapsed now
@@ -39,33 +39,9 @@ export default function ArtPage() {
   const { data: allArtists, isLoading } = useArtists();
   const { data: topArtists } = useTopArtists(20);
 
-  // Defer heavy derivations so the page shell paints immediately.
-  const deferredArtists = useDeferredValue(allArtists);
-
-  // KPI calculations
-  const kpis = useMemo(() => {
-    if (!deferredArtists.length)
-      return { total: 0, avgViews: 0, topSource: '-' };
-
-    const totalViews = deferredArtists.reduce((s, a) => s + (a.totalViews ?? 0), 0);
-    const avgViews = Math.round(totalViews / deferredArtists.length);
-
-    // Find most common source
-    const srcCounts = new Map<string, number>();
-    for (const a of deferredArtists) {
-      srcCounts.set(a.source, (srcCounts.get(a.source) ?? 0) + 1);
-    }
-    let topSource = '-';
-    let maxCount = 0;
-    for (const [src, cnt] of srcCounts) {
-      if (cnt > maxCount) {
-        topSource = src;
-        maxCount = cnt;
-      }
-    }
-
-    return { total: deferredArtists.length, avgViews, topSource };
-  }, [deferredArtists]);
+  // Module-level WeakMap cache — O(1) after first compute, even across
+  // component remounts caused by route changes.
+  const kpis = getArtKpis(allArtists);
 
   const fmtNum = (n: number) =>
     n >= 1_000_000

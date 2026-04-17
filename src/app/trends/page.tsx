@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useDeferredValue } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
@@ -13,7 +13,8 @@ import { MetricCard } from '@/components/ui/MetricCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { Badge } from '@/components/ui/Badge';
-import type { TrendItem, AdCreative, HookType, ContentRecord } from '@/lib/types';
+import { getTrendsKpis, getTitleLinkMap } from '@/lib/kpiCache';
+import type { TrendItem, AdCreative, HookType } from '@/lib/types';
 
 // Code-split heavy chart components — they only render inside CollapsibleSection
 // (default-collapsed), so keeping them out of the initial chunk shrinks it.
@@ -35,17 +36,6 @@ interface LlmSettings {
   model: string;
   apiKey: string;
   status: string;
-}
-
-/** Build a lookup map: lowercase title → link URL */
-function buildTitleLinkMap(records: ContentRecord[]): Map<string, string> {
-  const map = new Map<string, string>();
-  for (const r of records) {
-    if (r.link && r.title) {
-      map.set(r.title.toLowerCase(), r.link);
-    }
-  }
-  return map;
 }
 
 /* ------------------------------------------------------------------ */
@@ -388,29 +378,9 @@ export default function TrendsPage() {
     );
   }
 
-  // Defer heavy derivations so the page shell can paint immediately; the
-  // title/tag/source computations then run on a low-priority commit.
-  const deferredRecords = useDeferredValue(safeRecords);
-
-  // Build title→link lookup (memoized on deferred records)
-  const titleLinkMap = useMemo(
-    () => buildTitleLinkMap(deferredRecords),
-    [deferredRecords],
-  );
-
-  // KPI computations — unique tags + unique sources, memoized
-  const { uniqueTagsSize, uniqueSourcesSize } = useMemo(() => {
-    const uniqueTags = new Set<string>();
-    const uniqueSources = new Set<string>();
-    for (const r of deferredRecords) {
-      if (r.source) uniqueSources.add(r.source);
-      for (const tag of r.tags ?? []) {
-        const normalized = tag.trim().toLowerCase();
-        if (normalized) uniqueTags.add(normalized);
-      }
-    }
-    return { uniqueTagsSize: uniqueTags.size, uniqueSourcesSize: uniqueSources.size };
-  }, [deferredRecords]);
+  // Module-level WeakMap caches — O(1) across mounts for the same records ref.
+  const titleLinkMap = getTitleLinkMap(safeRecords);
+  const { uniqueTagsSize, uniqueSourcesSize } = getTrendsKpis(safeRecords);
 
   const hasCachedResults = !!analysis;
 
