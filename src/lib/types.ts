@@ -129,10 +129,17 @@ export interface ArtStyleRecommendation {
   score: number;
 }
 
+export interface GroundingSource {
+  title: string;
+  uri: string;
+}
+
 export interface ArtStyleAnalysis {
   styles: ArtStyleRecommendation[];
   summary: string;
   timeRange: ArtStyleTimeRange;
   queriedAt: string;     // ISO timestamp when LLM was queried
   createdAt: string;
+  // Real URLs from Google Search grounding metadata (never hallucinated)
+  groundingSources?: GroundingSource[];
 }

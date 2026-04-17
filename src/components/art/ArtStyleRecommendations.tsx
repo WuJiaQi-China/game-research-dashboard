@@ -11,6 +11,7 @@ import type {
   ArtStyleAnalysis,
   ArtStyleTimeRange,
   ArtStyleReference,
+  GroundingSource,
 } from '@/lib/types';
 
 /* ------------------------------------------------------------------ */
@@ -20,6 +21,7 @@ import type {
 function parseStyleResponse(
   text: string,
   timeRange: ArtStyleTimeRange,
+  groundingSources: GroundingSource[],
 ): ArtStyleAnalysis | null {
   let cleaned = text.trim();
   const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -30,23 +32,28 @@ function parseStyleResponse(
     if (!Array.isArray(obj.styles) || obj.styles.length === 0) return null;
 
     const styles: ArtStyleRecommendation[] = obj.styles.map((s: any, i: number) => {
-      const refs: ArtStyleReference[] = Array.isArray(s.references)
-        ? s.references
-            .map((r: any) => ({
-              title: String(r.title ?? r.name ?? ''),
-              url: String(r.url ?? ''),
-              kind: (r.kind === 'game' ? 'game' : 'webpage') as 'game' | 'webpage',
-            }))
-            .filter((r: ArtStyleReference) => r.url.startsWith('http'))
+      // References: games only (names, we'll auto-generate Google search links)
+      const games: ArtStyleReference[] = Array.isArray(s.reference_games ?? s.referenceGames)
+        ? (s.reference_games ?? s.referenceGames)
+            .map((g: any) => {
+              const title = typeof g === 'string' ? g : String(g?.title ?? g?.name ?? '');
+              if (!title) return null;
+              return {
+                title,
+                url: `https://www.google.com/search?q=${encodeURIComponent(title + ' game')}`,
+                kind: 'game' as const,
+              };
+            })
+            .filter((r: ArtStyleReference | null): r is ArtStyleReference => !!r)
         : [];
 
       return {
         rank: typeof s.rank === 'number' ? s.rank : i + 1,
         name: String(s.name || ''),
-        nameEn: String(s.name_en ?? s.nameEn ?? ''),
+        nameEn: String(s.name_en ?? s.nameEn ?? s.name ?? ''),
         description: String(s.description || ''),
         keywords: Array.isArray(s.keywords) ? s.keywords.map(String) : [],
-        references: refs,
+        references: games,
         imageUrls: Array.isArray(s.image_urls ?? s.imageUrls)
           ? (s.image_urls ?? s.imageUrls).map(String).filter((u: string) => u.startsWith('http'))
           : [],
@@ -60,10 +67,28 @@ function parseStyleResponse(
       timeRange,
       queriedAt: String(obj.queried_at ?? obj.queriedAt ?? new Date().toISOString()),
       createdAt: new Date().toISOString(),
+      groundingSources,
     };
   } catch {
     return null;
   }
+}
+
+/** Extract real URLs from Gemini grounding metadata — these are never hallucinated. */
+function extractGroundingSources(apiResponse: any): GroundingSource[] {
+  const chunks = apiResponse?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+  if (!Array.isArray(chunks)) return [];
+  const seen = new Set<string>();
+  const out: GroundingSource[] = [];
+  for (const c of chunks) {
+    const uri = c?.web?.uri;
+    const title = c?.web?.title;
+    if (typeof uri !== 'string' || !uri.startsWith('http')) continue;
+    if (seen.has(uri)) continue;
+    seen.add(uri);
+    out.push({ title: String(title || uri), uri });
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ */
@@ -100,12 +125,11 @@ function StyleCard({
   t: (k: any) => string;
   lang: string;
 }) {
-  const displayName = lang === 'zh' ? style.name : (style.nameEn || style.name);
+  const displayName = style.nameEn || style.name;
   const refs = style.references ?? [];
   const imageUrls = style.imageUrls ?? [];
   const keywords = style.keywords ?? [];
   const games = refs.filter(r => r.kind === 'game');
-  const pages = refs.filter(r => r.kind === 'webpage');
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
@@ -117,9 +141,6 @@ function StyleCard({
           </span>
           <div className="min-w-0">
             <h3 className="font-semibold text-gray-900 leading-tight truncate">{displayName}</h3>
-            {style.nameEn && lang === 'zh' && (
-              <p className="text-xs text-gray-400 truncate">{style.nameEn}</p>
-            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-sm shrink-0">
@@ -152,8 +173,8 @@ function StyleCard({
         </div>
       )}
 
-      {/* References: games + webpages */}
-      {(games.length > 0 || pages.length > 0) && (
+      {/* Reference games — each links to a Google search for the title */}
+      {games.length > 0 && (
         <div>
           <p className="text-xs text-gray-400 mb-1.5">{t('art_style_refs')}</p>
           <div className="flex flex-wrap gap-2">
@@ -164,22 +185,10 @@ function StyleCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                title={r.title}
               >
                 <Gamepad2 size={12} />
                 {r.title}
-              </a>
-            ))}
-            {pages.map((r, i) => (
-              <a
-                key={`p-${i}`}
-                href={r.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-              >
-                <Globe size={12} />
-                {r.title}
-                <ExternalLink size={10} />
               </a>
             ))}
           </div>
@@ -190,11 +199,48 @@ function StyleCard({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Global grounding sources panel                                    */
+/* ------------------------------------------------------------------ */
+
+function GroundingSourcesPanel({
+  sources,
+  t,
+}: {
+  sources: GroundingSource[];
+  t: (k: any) => string;
+}) {
+  if (!sources?.length) return null;
+  return (
+    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+      <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+        <Globe size={14} />
+        {t('art_style_sources')}
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {sources.map((s, i) => (
+          <a
+            key={i}
+            href={s.uri}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-white border border-gray-200 text-gray-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors max-w-xs truncate"
+            title={s.title}
+          >
+            <ExternalLink size={10} className="shrink-0" />
+            <span className="truncate">{s.title}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main component                                                    */
 /* ------------------------------------------------------------------ */
 
-const STORAGE_KEY = 'art_style_analysis_v2';
-const LEGACY_KEYS = ['art_style_analysis'];
+const STORAGE_KEY = 'art_style_analysis_v3';
+const LEGACY_KEYS = ['art_style_analysis', 'art_style_analysis_v2'];
 
 interface LlmSettings {
   provider: string;
@@ -203,11 +249,8 @@ interface LlmSettings {
   status: string;
 }
 
-function rangeToHumanZh(range: ArtStyleTimeRange): string {
-  return { '1w': '最近一周', '1m': '最近一月', '3m': '最近三个月' }[range];
-}
 function rangeToHumanEn(range: ArtStyleTimeRange): string {
-  return { '1w': 'the past week', '1m': 'the past month', '3m': 'the past three months' }[range];
+  return { '1w': 'the past 7 days', '1m': 'the past 30 days', '3m': 'the past 90 days' }[range];
 }
 
 export function ArtStyleRecommendations() {
@@ -265,22 +308,25 @@ export function ArtStyleRecommendations() {
     setError(null);
 
     const nowIso = new Date().toISOString();
-    const nowLabel = new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US');
-    const langLabel = lang === 'zh' ? 'Chinese' : 'English';
-    const rangeHuman = lang === 'zh' ? rangeToHumanZh(timeRange) : rangeToHumanEn(timeRange);
+    const nowLabel = new Date().toUTCString();
+    const rangeHuman = rangeToHumanEn(timeRange);
 
-    const prompt = `You are a game art market analyst. Use Google Search to find the latest trends.
+    // IMPORTANT: prompt is entirely in English. Market focus is explicitly
+    // the Western / global overseas market, NOT the Chinese domestic market.
+    const prompt = `You are a game art market analyst researching the GLOBAL OVERSEAS market (primarily North America, Europe, Japan, SEA — NOT the Chinese domestic market). Use Google Search to find the latest trends.
 
-**Current timestamp:** ${nowIso} (today is ${nowLabel})
-**Time range to analyze:** ${rangeHuman} (relative to today)
+**Current timestamp:** ${nowIso} (today: ${nowLabel})
+**Time range:** ${rangeHuman} from today.
 
-**Target genre:** Female-oriented dialogue/chat-based games (otome games, visual novels with choice-based dialogue, chat-story games like MeChat, Episode, Chapters, Love and Deepspace, Mystic Messenger, etc.)
+**Target genre:** Female-oriented dialogue / chat-based games on Western / global markets. Examples: otome games, choice-based visual novels, chat-story apps (MeChat, Episode, Chapters, Choices, Mystic Messenger), AAA narrative romance (Love and Deepspace), indie VNs on Steam/itch.io. EXCLUDE Chinese-domestic-only titles.
 
-**Task:** Search online for the 10 MOST POPULAR art styles in this genre within the specified time range. Look at release dates, trending lists, review dates, and discussion timestamps to ensure all findings are from the past ${timeRange === '1w' ? '7 days' : timeRange === '1m' ? '30 days' : '90 days'}.
+**Task:** Identify the 10 MOST POPULAR art styles in this genre during ${rangeHuman}. Rank them 1-10 by popularity (consider player reception, engagement, and creator adoption).
 
-**Sources to search (combine both):**
-- **Player-facing**: Reddit (r/otomegames, r/visualnovels, r/mobilegaming, r/RomanceBooks), App Store / Google Play top charts and reviews, TikTok / YouTube ad engagement, Steam reviews & wishlist changes, official game subreddits and Discord servers
-- **Creator-facing**: ArtStation trending, Pixiv popular tags, CivitAI trending models
+**Sources (search English-language / Western sources):**
+- Player-facing: Reddit (r/otomegames, r/visualnovels, r/mobilegaming, r/RomanceBooks), App Store US / Google Play US top charts and reviews, Steam reviews, TikTok / YouTube ad engagement on Western accounts, English game press (Gamesindustry.biz, Pocket Tactics, Rock Paper Shotgun)
+- Creator-facing: ArtStation trending, DeviantArt popular, CivitAI trending models
+
+**For each style, provide GAME TITLES ONLY for references — do NOT include URLs for references, as URLs often go stale. We will auto-generate search links from the titles.**
 
 **Return JSON wrapped in \`\`\`json fences:**
 {
@@ -288,29 +334,25 @@ export function ArtStyleRecommendations() {
   "styles": [
     {
       "rank": 1,
-      "name": "Style name in ${langLabel}",
-      "name_en": "English Name",
-      "description": "Why this style is trending NOW (past ${rangeHuman}). Cite specific games, player discussions, or engagement data you found. 3-4 sentences.",
-      "keywords": ["semi-realism", "soft-shading", "..."],
-      "references": [
-        { "title": "Love and Deepspace", "url": "https://...", "kind": "game" },
-        { "title": "Reddit discussion on r/otomegames", "url": "https://reddit.com/...", "kind": "webpage" }
-      ],
-      "image_urls": ["https://... direct image URLs ..."],
+      "name": "English style name",
+      "name_en": "English style name (same as name)",
+      "description": "Why this style is trending NOW in Western markets during ${rangeHuman}. Cite specific games, player reactions, or press coverage you found. 3-4 sentences.",
+      "keywords": ["semi-realism", "soft-shading", "cinematic lighting"],
+      "reference_games": ["Love and Deepspace", "Mystic Messenger", "Episode: Choose Your Story"],
+      "image_urls": ["https://... only include direct image URLs you are highly confident exist ..."],
       "score": 92
     }
-    /* ... 9 more styles, 10 total ... */
+    /* ... 9 more, 10 total ... */
   ],
-  "summary": "Overall trend overview for ${rangeHuman} in ${langLabel}"
+  "summary": "Overall overseas-market trend overview for ${rangeHuman}."
 }
 
 **Requirements:**
-- Return EXACTLY 10 styles, ranked 1-10 by popularity
-- Every "references" array MUST contain at least 2 entries: at least 1 game (kind:"game") AND at least 1 webpage (kind:"webpage")
-- "references" should ONLY be real, verified URLs you found via search
-- "image_urls" should be direct embeddable image links (.jpg/.png/.webp) when available; empty array if none reliable
-- Do NOT use memorized knowledge — everything must come from your search results dated within ${rangeHuman}
-- Respond entirely in ${langLabel}`;
+- Return EXACTLY 10 styles, ranked 1-10
+- "reference_games": an array of 2-5 real game titles (STRING array). NO URLs. We auto-generate Google search links.
+- "image_urls": ONLY include if you are highly confident the URL is a real, accessible image. Otherwise return an empty array. Do NOT hallucinate image URLs.
+- Do NOT use memorized knowledge — base everything on your search results within ${rangeHuman}
+- ALL text fields (name, description, keywords, summary) MUST be in ENGLISH only. Do not translate. Do not use Chinese.`;
 
     fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${llm.model || 'gemini-2.5-flash'}:generateContent?key=${llm.apiKey}`,
@@ -329,7 +371,8 @@ export function ArtStyleRecommendations() {
       })
       .then(data => {
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const parsed = parseStyleResponse(text, timeRange);
+        const groundingSources = extractGroundingSources(data);
+        const parsed = parseStyleResponse(text, timeRange, groundingSources);
         if (parsed) {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
           setAnalysis(parsed);
@@ -467,6 +510,11 @@ export function ArtStyleRecommendations() {
               <StyleCard key={style.rank} style={style} t={t} lang={lang} />
             ))}
           </div>
+
+          {/* Real Google Search sources (from Gemini grounding metadata) */}
+          {analysis.groundingSources && analysis.groundingSources.length > 0 && (
+            <GroundingSourcesPanel sources={analysis.groundingSources} t={t} />
+          )}
         </div>
       )}
     </div>
