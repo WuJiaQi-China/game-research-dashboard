@@ -101,8 +101,11 @@ function StyleCard({
   lang: string;
 }) {
   const displayName = lang === 'zh' ? style.name : (style.nameEn || style.name);
-  const games = style.references.filter(r => r.kind === 'game');
-  const pages = style.references.filter(r => r.kind === 'webpage');
+  const refs = style.references ?? [];
+  const imageUrls = style.imageUrls ?? [];
+  const keywords = style.keywords ?? [];
+  const games = refs.filter(r => r.kind === 'game');
+  const pages = refs.filter(r => r.kind === 'webpage');
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
@@ -129,11 +132,11 @@ function StyleCard({
       <p className="text-sm text-gray-600 leading-relaxed">{style.description}</p>
 
       {/* Keywords */}
-      {style.keywords.length > 0 && (
+      {keywords.length > 0 && (
         <div>
           <p className="text-xs text-gray-400 mb-1.5">{t('art_style_keywords')}</p>
           <div className="flex flex-wrap gap-1.5">
-            {style.keywords.map(kw => (
+            {keywords.map(kw => (
               <Badge key={kw} color="#7C3AED">{kw}</Badge>
             ))}
           </div>
@@ -141,9 +144,9 @@ function StyleCard({
       )}
 
       {/* Sample images */}
-      {style.imageUrls.length > 0 && (
+      {imageUrls.length > 0 && (
         <div className="flex gap-3 overflow-x-auto py-1">
-          {style.imageUrls.map((url, i) => (
+          {imageUrls.map((url, i) => (
             <SafeImage key={i} src={url} alt={`${displayName} sample ${i + 1}`} />
           ))}
         </div>
@@ -190,7 +193,8 @@ function StyleCard({
 /*  Main component                                                    */
 /* ------------------------------------------------------------------ */
 
-const STORAGE_KEY = 'art_style_analysis';
+const STORAGE_KEY = 'art_style_analysis_v2';
+const LEGACY_KEYS = ['art_style_analysis'];
 
 interface LlmSettings {
   provider: string;
@@ -222,16 +226,34 @@ export function ArtStyleRecommendations() {
       const raw = localStorage.getItem('llm_settings');
       if (raw) setLlm(JSON.parse(raw));
     } catch {}
+    // Drop legacy cache entries that don't match the current schema.
+    for (const k of LEGACY_KEYS) {
+      try { localStorage.removeItem(k); } catch {}
+    }
     try {
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) {
         const parsed: ArtStyleAnalysis = JSON.parse(cached);
-        if (parsed.styles?.length) {
+        // Defensive: every style must have the fields the UI reads
+        const valid =
+          Array.isArray(parsed?.styles) &&
+          parsed.styles.length > 0 &&
+          parsed.styles.every(
+            s =>
+              Array.isArray(s.references) &&
+              Array.isArray(s.imageUrls) &&
+              Array.isArray(s.keywords),
+          );
+        if (valid) {
           setAnalysis(parsed);
           if (parsed.timeRange) setTimeRange(parsed.timeRange);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
         }
       }
-    } catch {}
+    } catch {
+      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    }
   }, []);
 
   const llmConnected = llm?.status === 'connected' && !!llm?.apiKey;
