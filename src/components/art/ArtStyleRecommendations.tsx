@@ -74,6 +74,56 @@ function parseStyleResponse(
   }
 }
 
+/** Fetch real App Store screenshots for a game title. Free API, CORS-friendly. */
+async function fetchItunesScreenshots(gameTitle: string): Promise<string[]> {
+  if (!gameTitle) return [];
+  try {
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(gameTitle)}&entity=software&limit=1&country=us`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const result = data?.results?.[0];
+    if (!result) return [];
+    const shots = Array.isArray(result.screenshotUrls) ? result.screenshotUrls : [];
+    // Include ipad screenshots if no iPhone ones available
+    if (shots.length === 0 && Array.isArray(result.ipadScreenshotUrls)) {
+      return result.ipadScreenshotUrls.slice(0, 4).map(String);
+    }
+    return shots.slice(0, 4).map(String);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * For each style, fetch real screenshots from the iTunes Search API using
+ * its top reference game(s). Runs in parallel.
+ */
+async function enrichStylesWithScreenshots(
+  styles: ArtStyleRecommendation[],
+): Promise<ArtStyleRecommendation[]> {
+  const enriched = await Promise.all(
+    styles.map(async style => {
+      // Try the first 2 reference games; stop once we have >=2 screenshots
+      const games = style.references.filter(r => r.kind === 'game').slice(0, 2);
+      const collected: string[] = [];
+      for (const g of games) {
+        const shots = await fetchItunesScreenshots(g.title);
+        for (const s of shots) {
+          if (!collected.includes(s)) collected.push(s);
+          if (collected.length >= 4) break;
+        }
+        if (collected.length >= 2) break;
+      }
+      // iTunes screenshots are the primary source; fall back to LLM URLs only
+      // if we got nothing, since LLM-provided URLs have a high failure rate.
+      const finalImages = collected.length > 0 ? collected : (style.imageUrls ?? []);
+      return { ...style, imageUrls: finalImages };
+    }),
+  );
+  return enriched;
+}
+
 /** Extract real URLs from Gemini grounding metadata — these are never hallucinated. */
 function extractGroundingSources(apiResponse: any): GroundingSource[] {
   const chunks = apiResponse?.candidates?.[0]?.groundingMetadata?.groundingChunks;
@@ -240,8 +290,8 @@ function GroundingSourcesPanel({
 /*  Main component                                                    */
 /* ------------------------------------------------------------------ */
 
-const STORAGE_KEY = 'art_style_analysis_v3';
-const LEGACY_KEYS = ['art_style_analysis', 'art_style_analysis_v2'];
+const STORAGE_KEY = 'art_style_analysis_v4';
+const LEGACY_KEYS = ['art_style_analysis', 'art_style_analysis_v2', 'art_style_analysis_v3'];
 
 interface LlmSettings {
   provider: string;
@@ -329,14 +379,9 @@ export function ArtStyleRecommendations() {
 
 **For each style, provide GAME TITLES ONLY for references — do NOT include URLs for references, as URLs often go stale. We will auto-generate search links from the titles.**
 
-**For each style, provide 2-4 SAMPLE IMAGE URLs that represent the visual style.** These MUST be real image URLs you encountered in your Google Search results. Preferred sources (in order of reliability):
-1. Steam CDN (cdn.cloudflare.steamstatic.com, shared.cloudflare.steamstatic.com)
-2. App Store / Google Play screenshot CDNs (is1-ssl.mzstatic.com, play-lh.googleusercontent.com)
-3. Official game Wikipedia/Fandom media (upload.wikimedia.org, static.wikia.nocookie.net)
-4. ArtStation CDN (cdna.artstation.com, cdnb.artstation.com)
-5. CivitAI model previews (image.civitai.com)
+**Image URLs are OPTIONAL — we auto-fetch App Store screenshots from the reference games you provide.** Only include image_urls if you have a high-confidence direct image URL from your search results (prefer Steam CDN / mzstatic.com / wikimedia). Otherwise return an empty array. Never fabricate URLs.
 
-**Do NOT fabricate image URLs.** If you cannot find 2+ verified image URLs for a style, return an empty array rather than guessing.
+**Pick good reference games:** prioritize games that are available on the iOS App Store (US region) — we use them to fetch real screenshots. Good choices: Love and Deepspace, Mystic Messenger, Episode, Chapters, Choices by Pixelberry, Romance Club, My Candy Love, etc.
 
 **Return JSON wrapped in \`\`\`json fences:**
 {
@@ -360,7 +405,7 @@ export function ArtStyleRecommendations() {
 **Requirements:**
 - Return EXACTLY 10 styles, ranked 1-10
 - "reference_games": an array of 2-5 real game titles (STRING array). NO URLs. We auto-generate Google search links.
-- "image_urls": Provide 2-4 REAL image URLs from your search results, preferring the stable CDNs listed above. If you cannot find 2+ verified URLs, return an empty array — do NOT hallucinate URLs.
+- "image_urls": OPTIONAL. Usually return []; we auto-fetch screenshots from reference_games. Only include if you found a known-good direct image URL.
 - Do NOT use memorized knowledge — base everything on your search results within ${rangeHuman}
 - ALL text fields (name, description, keywords, summary) MUST be in ENGLISH only. Do not translate. Do not use Chinese.`;
 
@@ -379,16 +424,21 @@ export function ArtStyleRecommendations() {
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         return res.json();
       })
-      .then(data => {
+      .then(async data => {
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         const groundingSources = extractGroundingSources(data);
         const parsed = parseStyleResponse(text, timeRange, groundingSources);
-        if (parsed) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-          setAnalysis(parsed);
-        } else {
+        if (!parsed) {
           setError(lang === 'zh' ? '解析响应失败，请重试。' : 'Failed to parse response. Please retry.');
+          return;
         }
+        // Show cards immediately with whatever LLM gave (even if URLs fail)
+        setAnalysis(parsed);
+        // Then enrich with real App Store screenshots in the background
+        const enrichedStyles = await enrichStylesWithScreenshots(parsed.styles);
+        const enriched: ArtStyleAnalysis = { ...parsed, styles: enrichedStyles };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(enriched));
+        setAnalysis(enriched);
       })
       .catch(e => {
         setError(e instanceof Error ? e.message : String(e));
