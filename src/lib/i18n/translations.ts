@@ -224,17 +224,6 @@ export const translations = {
   date_to:              { zh: '结束日期',                 en: 'To date' },
   all_types:            { zh: '全部类型',                 en: 'All types' },
 
-  // ─── AI Art Style Recommendations ──────────────────────────────────────
-  art_style_reco:       { zh: 'AI 画风推荐',               en: 'AI Style Recommendations' },
-  art_style_generate:   { zh: '生成推荐',                  en: 'Generate' },
-  art_style_regenerate: { zh: '重新生成',                  en: 'Regenerate' },
-  art_style_generating: { zh: '正在分析最新趋势...',        en: 'Analyzing latest trends...' },
-  art_style_keywords:   { zh: 'Art Team 关键词',           en: 'Art Team Keywords' },
-  art_style_features:   { zh: '面部特征',                  en: 'Facial Features' },
-  art_style_refs:       { zh: '参考链接',                  en: 'References' },
-  art_style_score:      { zh: '热度',                     en: 'Popularity' },
-  art_style_summary:    { zh: '趋势概述',                  en: 'Trend Overview' },
-
   // ─── Generic / shared ──────────────────────────────────────────────────
   no_data:              { zh: '暂无数据。',               en: 'No data available.' },
   no_data_hint:         { zh: '暂无数据。请在设置中运行爬取。', en: 'No data. Run scraper in Settings.' },

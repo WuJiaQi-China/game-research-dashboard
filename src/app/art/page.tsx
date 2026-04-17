@@ -28,10 +28,6 @@ const ArtistRankingTable = dynamic(
   () => import('@/components/art/ArtistRankingTable').then(m => ({ default: m.ArtistRankingTable })),
   { ssr: false },
 );
-const ArtStyleRecommendations = dynamic(
-  () => import('@/components/art/ArtStyleRecommendations').then(m => ({ default: m.ArtStyleRecommendations })),
-  { ssr: false },
-);
 
 export default function ArtPage() {
   const t = useT();
@@ -93,11 +89,6 @@ export default function ArtPage() {
           icon={<Globe size={20} />}
         />
       </div>
-
-      {/* AI Art Style Recommendations — always visible, independent of scraped data */}
-      <CollapsibleSection title={t('art_style_reco')} defaultOpen={false}>
-        <ArtStyleRecommendations />
-      </CollapsibleSection>
 
       {/* Artist Gallery */}
       <CollapsibleSection title={t('art_gallery')} defaultOpen={false}>
