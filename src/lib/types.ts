@@ -105,3 +105,34 @@ export interface TrendAnalysis {
   createdAt: any;
   recordCount: number;
 }
+
+// ----------------------------------------------------------------------
+// Art style recommendations (LLM-driven, online search)
+// ----------------------------------------------------------------------
+
+export type ArtStyleTimeRange = '1w' | '1m' | '3m';
+
+export interface ArtStyleReference {
+  title: string;       // game title or webpage title
+  url: string;
+  kind: 'game' | 'webpage';
+}
+
+export interface ArtStyleRecommendation {
+  rank: number;
+  name: string;
+  nameEn: string;
+  description: string;
+  keywords: string[];
+  references: ArtStyleReference[];
+  imageUrls: string[];
+  score: number;
+}
+
+export interface ArtStyleAnalysis {
+  styles: ArtStyleRecommendation[];
+  summary: string;
+  timeRange: ArtStyleTimeRange;
+  queriedAt: string;     // ISO timestamp when LLM was queried
+  createdAt: string;
+}
