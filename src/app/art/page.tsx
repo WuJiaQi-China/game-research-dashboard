@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useDeferredValue } from 'react';
 import dynamic from 'next/dynamic';
 import { Users, Eye, Globe } from 'lucide-react';
 import { useI18n, useT } from '@/lib/i18n/context';
@@ -39,17 +39,20 @@ export default function ArtPage() {
   const { data: allArtists, isLoading } = useArtists();
   const { data: topArtists } = useTopArtists(20);
 
+  // Defer heavy derivations so the page shell paints immediately.
+  const deferredArtists = useDeferredValue(allArtists);
+
   // KPI calculations
   const kpis = useMemo(() => {
-    if (!allArtists.length)
+    if (!deferredArtists.length)
       return { total: 0, avgViews: 0, topSource: '-' };
 
-    const totalViews = allArtists.reduce((s, a) => s + (a.totalViews ?? 0), 0);
-    const avgViews = Math.round(totalViews / allArtists.length);
+    const totalViews = deferredArtists.reduce((s, a) => s + (a.totalViews ?? 0), 0);
+    const avgViews = Math.round(totalViews / deferredArtists.length);
 
     // Find most common source
     const srcCounts = new Map<string, number>();
-    for (const a of allArtists) {
+    for (const a of deferredArtists) {
       srcCounts.set(a.source, (srcCounts.get(a.source) ?? 0) + 1);
     }
     let topSource = '-';
@@ -61,8 +64,8 @@ export default function ArtPage() {
       }
     }
 
-    return { total: allArtists.length, avgViews, topSource };
-  }, [allArtists]);
+    return { total: deferredArtists.length, avgViews, topSource };
+  }, [deferredArtists]);
 
   const fmtNum = (n: number) =>
     n >= 1_000_000

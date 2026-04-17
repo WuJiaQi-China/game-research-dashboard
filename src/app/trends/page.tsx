@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useDeferredValue } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
@@ -388,19 +388,29 @@ export default function TrendsPage() {
     );
   }
 
-  // Build title→link lookup
-  const titleLinkMap = buildTitleLinkMap(safeRecords);
+  // Defer heavy derivations so the page shell can paint immediately; the
+  // title/tag/source computations then run on a low-priority commit.
+  const deferredRecords = useDeferredValue(safeRecords);
 
-  // KPI computations
-  const uniqueTags = new Set<string>();
-  const uniqueSources = new Set<string>();
-  for (const r of safeRecords) {
-    if (r.source) uniqueSources.add(r.source);
-    for (const tag of r.tags ?? []) {
-      const normalized = tag.trim().toLowerCase();
-      if (normalized) uniqueTags.add(normalized);
+  // Build title→link lookup (memoized on deferred records)
+  const titleLinkMap = useMemo(
+    () => buildTitleLinkMap(deferredRecords),
+    [deferredRecords],
+  );
+
+  // KPI computations — unique tags + unique sources, memoized
+  const { uniqueTagsSize, uniqueSourcesSize } = useMemo(() => {
+    const uniqueTags = new Set<string>();
+    const uniqueSources = new Set<string>();
+    for (const r of deferredRecords) {
+      if (r.source) uniqueSources.add(r.source);
+      for (const tag of r.tags ?? []) {
+        const normalized = tag.trim().toLowerCase();
+        if (normalized) uniqueTags.add(normalized);
+      }
     }
-  }
+    return { uniqueTagsSize: uniqueTags.size, uniqueSourcesSize: uniqueSources.size };
+  }, [deferredRecords]);
 
   const hasCachedResults = !!analysis;
 
@@ -417,11 +427,11 @@ export default function TrendsPage() {
         />
         <MetricCard
           label={t('col_tags')}
-          value={uniqueTags.size}
+          value={uniqueTagsSize}
         />
         <MetricCard
           label={t('sites_covered')}
-          value={uniqueSources.size}
+          value={uniqueSourcesSize}
         />
       </div>
 
